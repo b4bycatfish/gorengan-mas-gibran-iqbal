@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" role="img" aria-label="Ilustrasi Pisang Goreng">
+  <rect width="640" height="640" fill="#a16207"/>
+  <circle cx="320" cy="268" r="150" fill="#fdf0c4" opacity="0.16"/>
+  <circle cx="320" cy="268" r="112" fill="#fdf0c4" opacity="0.22"/>
+  <text x="320" y="300" font-family="Segoe UI, Arial, sans-serif" font-size="104" font-weight="700"
+        fill="#fdf0c4" text-anchor="middle" opacity="0.95">PG</text>
+  <text x="320" y="470" font-family="Segoe UI, Arial, sans-serif" font-size="34" font-weight="600"
+        fill="#fdf0c4" text-anchor="middle" opacity="0.9">Pisang Goreng</text>
+  <rect x="0" y="0" width="640" height="12" fill="#fdf0c4" opacity="0.5"/>
+</svg>
