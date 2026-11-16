@@ -10,8 +10,10 @@ import {
   field,
   formatDate,
   openModal,
+  passwordInput,
   setFieldError,
   spinner,
+  successDialog,
   toast,
 } from '../ui.js';
 
@@ -40,8 +42,7 @@ function openUserForm({ user, currentUserId, onSaved }) {
 
   const name = input({ type: 'text', value: user?.name || '', placeholder: 'Nama lengkap', maxlength: 80 });
   const email = input({ type: 'email', value: user?.email || '', placeholder: 'nama@email.com' });
-  const password = input({
-    type: 'password',
+  const password = passwordInput({
     autocomplete: 'new-password',
     placeholder: isEdit ? 'Kosongkan bila tidak diubah' : 'Minimal 8 karakter',
   });
@@ -90,7 +91,7 @@ function openUserForm({ user, currentUserId, onSaved }) {
       'div',
       { class: 'form-grid' },
       field({ label: 'Email', name: 'email', control: email, required: true }),
-      field({ label: 'Kata sandi', name: 'password', control: password, required: !isEdit }),
+      field({ label: 'Kata sandi', name: 'password', control: password.field, required: !isEdit }),
     ),
     field({ label: 'Peran', name: 'role', control: role, required: true }),
     field({ label: 'Nomor WhatsApp', name: 'phone', control: phone, hint: 'Wajib untuk seller agar pembeli bisa memesan.' }),
@@ -123,7 +124,7 @@ function openUserForm({ user, currentUserId, onSaved }) {
       storeName: storeName.value.trim(),
       storeDescription: storeDescription.value.trim(),
       isActive: active.checked,
-      password: password.value,
+      password: password.input.value,
     };
 
     const errors = {};
@@ -149,8 +150,24 @@ function openUserForm({ user, currentUserId, onSaved }) {
       } else {
         const payload = { ...values };
         if (!payload.password) delete payload.password;
-        await api.adminCreateUser(payload);
-        toast('Akun baru berhasil dibuat.', 'success');
+        const { user: created } = await api.adminCreateUser(payload);
+        modal.close();
+        onSaved();
+        successDialog({
+          title: 'Akun berhasil dibuat',
+          message: 'Akun sudah tersimpan di database dan langsung aktif digunakan.',
+          details: [
+            ['Nama', created.name],
+            ['Email', created.email],
+            ['Peran', ROLE_LABEL[created.role] || created.role],
+            created.role === 'seller'
+              ? ['Toko', created.storeName || 'Belum diisi']
+              : ['WhatsApp', created.phone || 'Belum diisi'],
+            ['Status', created.isActive ? 'Aktif' : 'Nonaktif'],
+          ],
+          confirmLabel: 'Selesai',
+        });
+        return;
       }
       modal.close();
       onSaved();

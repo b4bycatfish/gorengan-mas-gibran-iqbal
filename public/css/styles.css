@@ -1091,6 +1091,111 @@ img {
   font-size: 0.82rem;
 }
 
+/* ---------- Kolom kata sandi dengan ikon mata ---------- */
+
+.password-field {
+  position: relative;
+  display: block;
+}
+
+.password-field input {
+  padding-right: 2.7rem;
+}
+
+.password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 0.3rem;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.password-toggle:hover {
+  color: var(--ink);
+  background: rgba(25, 20, 19, 0.06);
+}
+
+.password-toggle:focus-visible {
+  outline: 2px solid var(--red);
+  outline-offset: 1px;
+}
+
+.password-toggle[aria-pressed='true'] {
+  color: var(--red);
+}
+
+/* ---------- Pop-up keberhasilan ---------- */
+
+.success-dialog {
+  text-align: center;
+}
+
+.success-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.4rem;
+  height: 3.4rem;
+  margin-bottom: 0.7rem;
+  border-radius: 50%;
+  background: #e6f6ec;
+  color: #15663f;
+}
+
+.success-title {
+  font-size: 1.08rem;
+  margin-bottom: 0.3rem;
+}
+
+.success-text {
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
+.success-details {
+  margin: 1rem 0 0;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fbf8f7;
+  display: grid;
+  gap: 0.45rem;
+  text-align: left;
+}
+
+.success-details div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: 0.84rem;
+}
+
+.success-details dt {
+  color: var(--muted);
+}
+
+.success-details dd {
+  margin: 0;
+  font-weight: 600;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.success-actions {
+  margin-top: 1.1rem;
+}
+
 .form-actions {
   display: flex;
   justify-content: flex-end;

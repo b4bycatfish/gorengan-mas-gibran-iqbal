@@ -1,5 +1,5 @@
 import { api } from '../api.js';
-import { clear, el, showFormError, toast } from '../ui.js';
+import { clear, el, passwordInput, showFormError, successDialog, toast } from '../ui.js';
 
 function authShell({ title, subtitle, children }) {
   return el(
@@ -26,8 +26,7 @@ export function renderLogin({ main, state, navigate }) {
   clear(main);
 
   const email = el('input', { type: 'email', name: 'email', autocomplete: 'email', placeholder: 'nama@email.com' });
-  const password = el('input', {
-    type: 'password',
+  const password = passwordInput({
     id: 'login-password',
     name: 'password',
     autocomplete: 'current-password',
@@ -39,21 +38,21 @@ export function renderLogin({ main, state, navigate }) {
     'form',
     { class: 'auth-form', novalidate: true },
     el('div', { class: 'field' }, el('label', { for: 'login-email', text: 'Email' }), email),
-    el('div', { class: 'field' }, el('label', { for: 'login-password', text: 'Kata sandi' }), password),
+    el('div', { class: 'field' }, el('label', { for: 'login-password', text: 'Kata sandi' }), password.field),
     submit,
   );
   email.id = 'login-email';
 
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
-    if (!email.value.trim() || !password.value) {
+    if (!email.value.trim() || !password.input.value) {
       showFormError(form, 'Email dan kata sandi wajib diisi.');
       return;
     }
     submit.disabled = true;
     submit.textContent = 'Memproses...';
     try {
-      const { user } = await api.login(email.value.trim(), password.value);
+      const { user } = await api.login(email.value.trim(), password.input.value);
       state.user = user;
       toast(`Selamat datang, ${user.name}.`, 'success');
       redirectByRole(user, navigate);
@@ -97,13 +96,16 @@ export function renderRegister({ main, state, navigate }) {
 
   const name = el('input', { type: 'text', id: 'reg-name', autocomplete: 'name', placeholder: 'Nama lengkap' });
   const email = el('input', { type: 'email', id: 'reg-email', autocomplete: 'email', placeholder: 'nama@email.com' });
-  const password = el('input', {
-    type: 'password',
+  const password = passwordInput({
     id: 'reg-password',
     autocomplete: 'new-password',
     placeholder: 'Minimal 8 karakter',
   });
-  const confirm = el('input', { type: 'password', id: 'reg-confirm', autocomplete: 'new-password', placeholder: 'Ulangi kata sandi' });
+  const confirm = passwordInput({
+    id: 'reg-confirm',
+    autocomplete: 'new-password',
+    placeholder: 'Ulangi kata sandi',
+  });
   const submit = el('button', { type: 'submit', class: 'btn btn--primary btn--block' }, 'Daftar');
 
   const form = el(
@@ -111,16 +113,16 @@ export function renderRegister({ main, state, navigate }) {
     { class: 'auth-form', novalidate: true },
     el('div', { class: 'field' }, el('label', { for: 'reg-name', text: 'Nama lengkap' }), name),
     el('div', { class: 'field' }, el('label', { for: 'reg-email', text: 'Email' }), email),
-    el('div', { class: 'field' }, el('label', { for: 'reg-password', text: 'Kata sandi' }), password),
-    el('div', { class: 'field' }, el('label', { for: 'reg-confirm', text: 'Ulangi kata sandi' }), confirm),
+    el('div', { class: 'field' }, el('label', { for: 'reg-password', text: 'Kata sandi' }), password.field),
+    el('div', { class: 'field' }, el('label', { for: 'reg-confirm', text: 'Ulangi kata sandi' }), confirm.field),
     submit,
   );
 
   form.addEventListener('submit', async (event) => {
     event.preventDefault();
     if (name.value.trim().length < 2) return showFormError(form, 'Nama minimal 2 karakter.');
-    if (password.value.length < 8) return showFormError(form, 'Kata sandi minimal 8 karakter.');
-    if (password.value !== confirm.value) return showFormError(form, 'Konfirmasi kata sandi tidak sama.');
+    if (password.input.value.length < 8) return showFormError(form, 'Kata sandi minimal 8 karakter.');
+    if (password.input.value !== confirm.input.value) return showFormError(form, 'Konfirmasi kata sandi tidak sama.');
 
     submit.disabled = true;
     submit.textContent = 'Mendaftar...';
@@ -128,10 +130,19 @@ export function renderRegister({ main, state, navigate }) {
       const { user } = await api.register({
         name: name.value.trim(),
         email: email.value.trim(),
-        password: password.value,
+        password: password.input.value,
       });
       state.user = user;
-      toast('Pendaftaran berhasil. Selamat berbelanja!', 'success');
+      successDialog({
+        title: 'Pendaftaran berhasil',
+        message: 'Akun pembeli sudah aktif. Selamat berbelanja!',
+        details: [
+          ['Nama', user.name],
+          ['Email', user.email],
+          ['Peran', 'Pembeli'],
+        ],
+        confirmLabel: 'Lihat katalog',
+      });
       navigate('#/');
     } catch (err) {
       showFormError(form, err.message);

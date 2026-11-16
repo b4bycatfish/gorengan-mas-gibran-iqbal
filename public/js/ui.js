@@ -60,6 +60,83 @@ export function toast(message, type = 'info') {
   }, 3200);
 }
 
+const SVG_NS = 'http://www.w3.org/2000/svg';
+
+/** Membuat ikon SVG sederhana dari daftar [tag, atribut]. */
+function svgIcon(children, size = 20) {
+  const svg = document.createElementNS(SVG_NS, 'svg');
+  const attrs = {
+    viewBox: '0 0 24 24',
+    width: String(size),
+    height: String(size),
+    fill: 'none',
+    stroke: 'currentColor',
+    'stroke-width': '1.8',
+    'stroke-linecap': 'round',
+    'stroke-linejoin': 'round',
+    'aria-hidden': 'true',
+    focusable: 'false',
+  };
+  for (const [key, value] of Object.entries(attrs)) svg.setAttribute(key, value);
+  for (const [tag, tagAttrs] of children) {
+    const node = document.createElementNS(SVG_NS, tag);
+    for (const [key, value] of Object.entries(tagAttrs)) node.setAttribute(key, value);
+    svg.append(node);
+  }
+  return svg;
+}
+
+function eyeIcon(visible) {
+  const parts = [
+    ['path', { d: 'M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z' }],
+    ['circle', { cx: '12', cy: '12', r: '3' }],
+  ];
+  if (!visible) parts.push(['path', { d: 'm3.5 3.5 17 17' }]);
+  return svgIcon(parts);
+}
+
+function checkIcon() {
+  return svgIcon(
+    [
+      ['circle', { cx: '12', cy: '12', r: '9.5' }],
+      ['path', { d: 'm7.8 12.3 2.8 2.8 5.6-5.8' }],
+    ],
+    28,
+  );
+}
+
+/**
+ * Kolom kata sandi dengan tombol ikon mata untuk menampilkan/menyembunyikan isi.
+ * Mengembalikan { field, input } — pakai `field` di DOM dan `input` untuk membaca nilai.
+ */
+export function passwordInput(attrs = {}) {
+  const input = el('input', { type: 'password', ...attrs });
+  const toggle = el(
+    'button',
+    {
+      type: 'button',
+      class: 'password-toggle',
+      'aria-label': 'Tampilkan kata sandi',
+      'aria-pressed': 'false',
+      title: 'Tampilkan kata sandi',
+      onClick: () => {
+        const show = input.type === 'password';
+        input.type = show ? 'text' : 'password';
+        toggle.setAttribute('aria-pressed', String(show));
+        toggle.setAttribute('aria-label', show ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi');
+        toggle.title = show ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi';
+        toggle.replaceChildren(eyeIcon(show));
+        input.focus();
+        const end = input.value.length;
+        input.setSelectionRange?.(end, end);
+      },
+    },
+    eyeIcon(false),
+  );
+  const field = el('div', { class: 'password-field' }, input, toggle);
+  return { field, input };
+}
+
 /**
  * Modal sederhana. Mengembalikan { root, body, close }.
  * `content` adalah Node (biasanya <form>).
@@ -103,6 +180,37 @@ export function openModal({ title, content, size = '' }) {
   return { root, body, close };
 }
 
+/** Pop-up keberhasilan dengan rincian singkat. */
+export function successDialog({ title, message, details = [], confirmLabel = 'Selesai' }) {
+  const content = el(
+    'div',
+    { class: 'success-dialog' },
+    el('span', { class: 'success-icon' }, checkIcon()),
+    el('h3', { class: 'success-title', text: title }),
+    message ? el('p', { class: 'success-text', text: message }) : null,
+    details.length
+      ? el(
+          'dl',
+          { class: 'success-details' },
+          ...details.map(([label, value]) =>
+            el('div', {}, el('dt', { text: label }), el('dd', { text: value })),
+          ),
+        )
+      : null,
+  );
+
+  const modal = openModal({ title: 'Berhasil', content, size: 'modal--sm' });
+  content.append(
+    el(
+      'div',
+      { class: 'form-actions success-actions' },
+      el('button', { type: 'button', class: 'btn btn--primary btn--block', onClick: modal.close }, confirmLabel),
+    ),
+  );
+  content.querySelector('.btn')?.focus();
+  return modal;
+}
+
 /** Dialog konfirmasi -> Promise<boolean>. */
 export function confirmDialog({ title, message, confirmLabel = 'Ya, lanjutkan', danger = false }) {
   return new Promise((resolve) => {
@@ -138,17 +246,21 @@ export function confirmDialog({ title, message, confirmLabel = 'Ya, lanjutkan', 
 /** Satu baris formulir: label + kontrol + tempat pesan galat. */
 export function field({ label, control, hint, name, required = false }) {
   const error = el('p', { class: 'field-error', id: `${name}-error`, hidden: true });
-  if (control instanceof Node) {
-    control.id = control.id || `f-${name}`;
-    control.setAttribute('aria-describedby', `${name}-error`);
-    if (required) control.required = true;
+  const inputEl =
+    control instanceof Node && !control.matches('input, select, textarea')
+      ? control.querySelector('input, select, textarea')
+      : control;
+  if (inputEl) {
+    inputEl.id = inputEl.id || `f-${name}`;
+    inputEl.setAttribute('aria-describedby', `${name}-error`);
+    if (required) inputEl.required = true;
   }
   return el(
     'div',
     { class: 'field', dataset: { field: name } },
     el(
       'label',
-      { for: control?.id || `f-${name}` },
+      { for: inputEl?.id || `f-${name}` },
       label,
       required ? el('span', { class: 'req', text: ' *' }) : null,
     ),
