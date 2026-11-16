@@ -18,6 +18,14 @@ CREATE TABLE IF NOT EXISTS users (
   KEY idx_users_role (role)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS product_images (
+  id         CHAR(36)     NOT NULL,
+  mime       VARCHAR(30)  NOT NULL,
+  bytes      MEDIUMBLOB   NOT NULL,
+  created_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS products (
   id          INT UNSIGNED NOT NULL AUTO_INCREMENT,
   seller_id   INT UNSIGNED NOT NULL,

@@ -123,9 +123,9 @@ router.get(
 
 /** Menentukan nilai gambar akhir dari unggahan/URL/penghapusan. */
 function resolveImage(req, existing = null) {
-  if (req.file) {
+  if (req.uploadedImageUrl) {
     if (existing) removeUploadedFile(existing);
-    return { value: `/uploads/${req.file.filename}` };
+    return { value: req.uploadedImageUrl };
   }
   if (req.body?.imageUrl !== undefined) {
     const check = validateImageUrl(req.body.imageUrl);
@@ -137,7 +137,7 @@ function resolveImage(req, existing = null) {
 }
 
 function rejectFileOnError(req) {
-  if (req.file) removeUploadedFile(`/uploads/${req.file.filename}`);
+  if (req.uploadedImageUrl) removeUploadedFile(req.uploadedImageUrl);
 }
 
 /** POST /api/products — hanya seller. */

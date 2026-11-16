@@ -3,6 +3,8 @@ import 'dotenv/config';
 
 export const DB_NAME = process.env.DB_NAME || 'gmg_toko';
 
+const useSsl = /^(1|true|yes)$/i.test(String(process.env.DB_SSL || ''));
+
 const baseConfig = {
   host: process.env.DB_HOST || '127.0.0.1',
   port: Number(process.env.DB_PORT || 3306),
@@ -10,8 +12,10 @@ const baseConfig = {
   password: process.env.DB_PASSWORD || '',
   charset: 'utf8mb4_unicode_ci',
   waitForConnections: true,
-  connectionLimit: 10,
+  // Serverless membuka banyak instance; batasi pool per instance lewat DB_POOL_SIZE.
+  connectionLimit: Number(process.env.DB_POOL_SIZE || 10),
   dateStrings: true,
+  ...(useSsl ? { ssl: { rejectUnauthorized: false } } : {}),
 };
 
 /** Pool untuk database aplikasi (dipakai seluruh route). */

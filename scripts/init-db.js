@@ -186,11 +186,19 @@ async function main() {
       await admin.query(`DROP DATABASE IF EXISTS \`${DB_NAME}\``);
     }
 
-    await admin.query(
-      `CREATE DATABASE IF NOT EXISTS \`${DB_NAME}\`
-       CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`,
-    );
-    console.log(`Database \`${DB_NAME}\` siap.`);
+    try {
+      await admin.query(
+        `CREATE DATABASE IF NOT EXISTS \`${DB_NAME}\`
+         CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`,
+      );
+      console.log(`Database \`${DB_NAME}\` siap.`);
+    } catch (err) {
+      // Database terkelola (mis. TiDB Cloud/Aiven) biasanya sudah dibuat dan
+      // pengguna tidak punya hak CREATE DATABASE — lanjutkan saja.
+      console.log(
+        `CREATE DATABASE dilewati (${err.code || err.message}); memakai database yang sudah ada.`,
+      );
+    }
 
     await admin.changeUser({ database: DB_NAME });
 

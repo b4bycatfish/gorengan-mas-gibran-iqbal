@@ -24,8 +24,11 @@ Katalog dapat dibuka tanpa masuk. Akun pembeli dibuat lewat pendaftaran publik; 
 
 ```
 .
+├─ api/
+│  └─ index.js              # entry Vercel Function (mengekspor app Express)
 ├─ server/
-│  ├─ index.js              # aplikasi Express, CSP, static, error handler
+│  ├─ index.js              # server lokal: buka port + shutdown
+│  ├─ app.js                # aplikasi Express, CSP, static, error handler
 │  ├─ db.js                 # pool MySQL
 │  ├─ lib/
 │  │  ├─ auth.js            # JWT, cookie, middleware peran
@@ -35,16 +38,18 @@ Katalog dapat dibuka tanpa masuk. Akun pembeli dibuat lewat pendaftaran publik; 
 │  └─ routes/
 │     ├─ auth.js            # login, daftar, keluar, sesi
 │     ├─ products.js        # katalog publik + CRUD seller
+│     ├─ images.js          # menyajikan gambar unggahan dari database
 │     ├─ seller.js          # ringkasan & pengaturan toko
 │     └─ admin.js           # pengelolaan pengguna
 ├─ db/schema.sql
 ├─ scripts/init-db.js       # buat database, tabel, dan data contoh
+├─ vercel.json              # static public + Express sebagai Vercel Function
 ├─ public/
 │  ├─ index.html
 │  ├─ css/styles.css
 │  ├─ js/                   # api, ui, app, views/{catalog,auth,seller,admin}
 │  └─ placeholder/          # SVG buatan sendiri
-├─ uploads/                 # gambar unggahan seller (runtime)
+├─ uploads/                 # hanya untuk gambar lama sebelum unggahan pindah ke database
 └─ .env.example
 ```
 
@@ -101,9 +106,42 @@ Data contoh berisi 12 produk (8 produk sesuai SPEC.md untuk Gorengan Mas Gibran 
 | `PORT` | Port server (default `3000`). |
 | `NODE_ENV` | Set `production` agar cookie memakai flag `secure` dan `trust proxy` aktif. |
 | `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME` | Koneksi MySQL. Default lokal ServBay: `127.0.0.1:3306`, `root` / `ServBay.dev`, database `gmg_toko`. |
+| `DB_SSL` | Set `true` bila server MySQL mewajibkan TLS (TiDB Cloud, Aiven, dan penyedia cloud lain). |
+| `DB_POOL_SIZE` | Jumlah koneksi per instance (default `10`; serverless sebaiknya `3`–`5`). |
 | `JWT_SECRET` | Wajib, minimal 16 karakter. Buat dengan `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"`. |
 
 `.env` sudah tercantum di `.gitignore`.
+
+## Deploy ke Vercel
+
+Repo ini sudah disiapkan untuk Vercel: berkas `public/` dilayani CDN, sedangkan seluruh aplikasi Express berjalan sebagai **satu Vercel Function** (`api/index.js`) dan dipanggil lewat `/api/*` (lihat `vercel.json`). Karena Vercel tidak menyediakan MySQL, database harus berupa MySQL cloud yang bisa diakses dari internet.
+
+1. Buat database MySQL cloud (misalnya TiDB Cloud Serverless atau Aiven for MySQL) dan catat host, port, user, password, serta nama database. Aktifkan TLS.
+2. Isi skema dan data contoh ke database tersebut dari komputer Anda:
+
+   ```bash
+   DB_HOST=... DB_PORT=4000 DB_USER=... DB_PASSWORD=... DB_NAME=gmg_toko DB_SSL=true npm run db:init
+   ```
+
+3. Di dashboard Vercel → **Project Settings → Environment Variables**, tambahkan:
+
+   | Variabel | Nilai |
+   |---|---|
+   | `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`, `DB_NAME` | kredensial database cloud |
+   | `DB_SSL` | `true` |
+   | `DB_POOL_SIZE` | `3` |
+   | `JWT_SECRET` | string acak ≥ 32 karakter |
+   | `NODE_ENV` | `production` |
+
+4. Deploy ulang (push ke `main`, atau `vercel --prod`).
+5. Periksa `https://<proyek>.vercel.app/api/health` → harus `{"ok":true,"database":"up"}`, lalu buka katalog dan pastikan 12 produk tampil.
+
+Catatan serverless:
+
+- Unggahan gambar disimpan di tabel `product_images` dan disajikan lewat `/api/images/<id>`, karena filesystem Vercel read-only. Folder `uploads/` hanya untuk gambar lama.
+- Batas body request Vercel 4,5 MB; gambar sudah diperkecil di peramban sebelum diunggah, jadi normalnya jauh di bawah batas itu.
+- Setiap instance Function membuka pool sendiri; `DB_POOL_SIZE` kecil mencegah koneksi database habis.
+- `npm run db:init` aman dijalankan pada database terkelola: `CREATE DATABASE` dilewati bila tidak ada hak, pembuatan tabel memakai `IF NOT EXISTS`, dan data contoh hanya diisi saat tabel `users` kosong.
 
 ## Alur pemesanan WhatsApp
 
@@ -137,7 +175,7 @@ Validasi produk mengikuti SPEC.md: nama 2–60 karakter, kategori 2–30, harga 
 
 - Ganti `JWT_SECRET` dan seluruh kata sandi akun demo sebelum dipakai publik.
 - Jalankan di belakang HTTPS dan set `NODE_ENV=production` (cookie `secure`, `trust proxy`).
-- Folder `uploads/` harus persisten (volume) dan ikut dicadangkan bersama database.
+- Gambar unggahan disimpan di tabel `product_images`, jadi ikut cadangan database.
 - Batas percobaan login: 20 per 10 menit per IP; pendaftaran: 10 per jam per IP.
 - Admin tidak dapat menghapus/menonaktifkan/menurunkan peran akunnya sendiri, dan sistem selalu menyisakan minimal satu admin aktif.
 - Hapus akun seller akan menghapus produknya (foreign key `ON DELETE CASCADE`).
